@@ -15,10 +15,38 @@ class Evaluation:
 		self.taskcomplete = 0
 		self.machinelist = None
 		self.time = 0
-		self.log = Log.Log('log/' + id +'.log.html')
+		self.log = None
 		#self.log = Log.Log('log/last.log.html')
-		self.log.log_init_tasklist(self.tasks)
 		self.id = id
+
+	def fast(self) :
+		tab = []
+		for t in self.tasks:
+			copytask = []
+			for op in t.oplist:
+				copytask.append(op)
+			tab.append(copytask)
+		nbLines = len(tab[0])
+		nbColonnes = len(tab)
+
+		i = 1
+		while i < nbLines :
+			tab[0][i] = tab[0][i - 1] + tab[0][i]
+			i += 1
+
+		j = 1
+		while j < nbColonnes :
+			tab[j][0] = tab[j - 1][0] + tab[j][0]
+			i = 1
+			while i < nbLines :
+				if tab[j - 1][i] > tab[j][i - 1] :
+					tmp = tab[j - 1][i]
+				else :
+					tmp = tab[j][i - 1]
+				tab[j][i] = tab[j][i] + tmp
+				i += 1
+			j += 1
+		return tab[nbColonnes - 1][nbLines - 1]
 
 
 	def ontaskdone(self, task):
@@ -32,7 +60,9 @@ class Evaluation:
 			task.reinit()
 			self.machinelist.assignTask(task, self.onopdone, self.ontaskdone)
 
-	def run(self):
+	def simulation(self):
+		self.log = Log.Log('log/' + id +'.log.html')
+		self.log.log_init_tasklist(self.tasks)
 		self.log.log_event_info(self.time, 'Execution', "Execution started !")
 		task = self.tasks.pop(0)
 		task.reinit()

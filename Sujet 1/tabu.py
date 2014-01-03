@@ -39,7 +39,7 @@ class Tabu:
 		self.decreasing = False
 
 
-	def run(self):
+	def run(self, it_max):
 		self.starting_time = time.time()
 		# parse le fichier d'entree pour construire la liste de taches
 		self.parse_input()
@@ -47,7 +47,7 @@ class Tabu:
 		self.init_ord()
 
 		reduced_sol = reduce(lambda a,b: str(a)+"-"+str(b), self.sequence)
-		self.best_sol = (Evaluation(self.tasks, self.sequence, reduced_sol).run(), reduced_sol)
+		self.best_sol = (Evaluation(self.tasks, self.sequence, reduced_sol).fast(), reduced_sol)
 		self.log.log_init_tabu(self.tabu_max_length, self.best_sol[1])
 		# cree le graphe avec un noeud correspondant a cet ordonnancement
 		self.sol_graph.add_node(
@@ -64,7 +64,6 @@ class Tabu:
 		# appelle run_rec qui va construire et parcourir le graphe des
 		#   suivant l'algorithme de recherche taboue de facon recursive
 		cur_node = (-1, reduced_sol)
-		it_max = 10
 		for i in range(it_max):
 			print "Progress: ", (float(i)/float(it_max)*100), '%'
 			#pdb.set_trace()
@@ -135,13 +134,13 @@ class Tabu:
 				if reduced_sol in self.sol_graph:
 					# si oui, on ajoute juste un lien vers ce noeud
 					self.sol_graph.add_edge(node, reduced_sol)
-					self.log.log_event(time.time() - self.starting_time, 'Graph', "Added edge between " + node + " and " + reduced_sol)
+					#self.log.log_event(time.time() - self.starting_time, 'Graph', "Node [" + reduced_sol + "] is already present (val="+str(self.sol_graph.node[reduced_sol]['value'])+") !")
 					# ajout du noeud adjacent a la liste des noeuds adjacents
 					# swap inverse (retour a l'etat initial de la list pour le swap suivant)
 					lst[i], lst[j] = lst[j], lst[i]
 				else:
 					#si non, on evalue la solution
-					res = (Evaluation(self.tasks, lst, reduced_sol).run(), reduced_sol)
+					res = (Evaluation(self.tasks, lst, reduced_sol).fast(), reduced_sol)
 					# on verifie si elle est meilleure que celle trouvee
 					if res[0] < self.best_sol[0]:
 						self.best_sol = res
@@ -149,7 +148,7 @@ class Tabu:
 					self.sol_graph.add_node(
 						reduced_sol, time=self.starting_time - time.time(),
 						value=res[0], list=[x for x in lst])
-					self.log.log_event(time.time() - self.starting_time, 'Graph', "Added new node : [" + str(res[0]) + "] " + reduced_sol)
+					#self.log.log_event(time.time() - self.starting_time, 'Graph', "Added new node : [" + str(res[0]) + "] " + reduced_sol)
 					# on ajoute le lien vers ce noeud
 					self.sol_graph.add_edge(node, reduced_sol)
 					# swap inverse
@@ -158,6 +157,11 @@ class Tabu:
 				# point on this node if it's the best adjacent node
 				if (best_adj[0] < 0 or self.sol_graph.node[reduced_sol]['value'] < best_adj[0]) and reduced_sol not in self.tabu_list:
 					best_adj = (self.sol_graph.node[reduced_sol]['value'], reduced_sol)
+
+				# add this adjacent node to the tabu list
+				if reduced_sol not in self.tabu_list:
+					self.tabu_list.append(reduced_sol)
+					self.tabu_length += 1
 
 		# tronque la list taboue a la longueur
 		if self.tabu_length > self.tabu_max_length:
