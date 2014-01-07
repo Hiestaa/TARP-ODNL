@@ -14,8 +14,8 @@ class Tabu:
 	def __init__(self, input_file, enable_display=False):
 		self.tabu_list = []
 		self.tabu_length = 0
-		self.tabu_max_length = 10000
-		self.tabu_min_length = 10
+		self.tabu_max_length = 100
+		self.tabu_min_length = 1
 
 		self.sol_graph = nx.Graph(name=input_file)
 		self.drawable_graph = nx.Graph()
@@ -36,7 +36,7 @@ class Tabu:
 		self.path = []
 		self.colorpath = []
 		self.colorpathstate = (0, 1, 0)
-		self.decreasing = False
+		self.decreasing = True
 
 
 	def run(self, it_max):
@@ -48,7 +48,7 @@ class Tabu:
 
 		reduced_sol = reduce(lambda a,b: str(a)+"-"+str(b), self.sequence)
 		self.best_sol = (Evaluation(self.tasks, self.sequence, reduced_sol).fast(), reduced_sol)
-		self.log.log_init_tabu(self.tabu_max_length, self.best_sol[1])
+		self.log.log_init_tabu(self.tabu_max_length, self.best_sol[1], self.best_sol[0])
 		# cree le graphe avec un noeud correspondant a cet ordonnancement
 		self.sol_graph.add_node(
 			reduced_sol, time=self.starting_time - time.time(),
@@ -60,23 +60,28 @@ class Tabu:
 			value=self.best_sol[0],
 			list=[x for x in self.sequence]
 		)
+		self.log.log_event_success(time.time() - self.starting_time, 'Result', "Initial node: [" + str(self.best_sol[0]) + "] " + reduced_sol)
 
 		# appelle run_rec qui va construire et parcourir le graphe des
 		#   suivant l'algorithme de recherche taboue de facon recursive
-		cur_node = (-1, reduced_sol)
+		cur_node = self.best_sol
 		for i in range(it_max):
 			print "Progress: ", (float(i)/float(it_max)*100), '%'
 			#pdb.set_trace()
 			ret = self.run_tabu(cur_node[1])
-			if ret is not None:
+			if ret[1] is not None:
 				self.drawable_graph.add_edge(cur_node[1], ret[1])
 				# si le resultat (best adj) est moins bon que le noeud precedent et qu'on etait sur une courbe descendente
-				#  on ajoute le noeud courant a la liste des optimums locaux
+				#  ou si on est sur le premier noeud et que le meilleur voisin est moins bon que le noeud courant
+				#  	on ajoute le noeud courant a la liste des optimums locaux
 				if ret[0] >= cur_node[0] and self.decreasing:
-					self.log.log_event_warning(time.time() - self.starting_time, 'Result', 'Local optimum found: '+str(cur_node)+' !')
-					print 'Local optimum found: '+str(cur_node)+' !'
+					self.log.log_event_warning(time.time() - self.starting_time, 'Result', 'Local optimum found: ['+str(cur_node[0])+'] '+str(cur_node[1])+' !')
+					if cur_node[1] in self.local_optimums:
+						self.log.log_event_error(time.time() - self.starting_time, 'Error', 'Local optimum: ['+str(cur_node[0])+'] '+str(cur_node[1])+' has already been found !')
+					else:
+						print 'Local optimum found: '+str(cur_node)+' !'
+						self.local_optimums.append(cur_node[1])
 					self.decreasing = False # on est plus sur une courbe descendante
-					self.local_optimums.append(cur_node[1])
 				# marque si on est sur une courbe descendante
 				if ret[0] < cur_node[0] or cur_node[0] < 0:
 					self.decreasing = True
@@ -85,8 +90,16 @@ class Tabu:
 				self.log.log_event_error(time.time() - self.starting_time, 'Error', "All the adjacents nodes are in the tabu list")
 				self.log.log_event_error(time.time() - self.starting_time, 'Error', 'Truncating tabu list to length: ' + str(self.tabu_min_length))
 				# on doit gerer le fait que tous les voisins du noeud courant sont dans la liste taboue
-				# on devrait remonter tans la liste du chemin parcouru jusqu'a trouver un
-			self.log.log_event_success(time.time() - self.starting_time, 'Result', "Best solution found for now: " + str(self.best_sol))
+				# on devrait remonter tans la liste du chemin parcouru jusqu'a trouver un autre chemin possible
+				# pour l'instant, on tronque la liste a sa taille minimum et on continue
+				self.tabu_list = self.tabu_list[self.tabu_length - self.tabu_min_length:self.tabu_length]
+				self.tabu_length = len(self.tabu_list)
+				#self.tabu_length = self.tabu_max_length
+				if self.tabu_length != self.tabu_min_length:
+					print "List len error: ", self.tabu_length
+					exit()
+				print cur_node
+			self.log.log_event_success(time.time() - self.starting_time, 'Result', "Best solution found for now: [" + str(self.best_sol[0]) + "] " + str(self.best_sol[1]))
 			self.log.log_event(time.time() - self.starting_time, 'State', "Tabu list size:" + str(self.tabu_length))
 
 
@@ -134,7 +147,7 @@ class Tabu:
 				if reduced_sol in self.sol_graph:
 					# si oui, on ajoute juste un lien vers ce noeud
 					self.sol_graph.add_edge(node, reduced_sol)
-					#self.log.log_event(time.time() - self.starting_time, 'Graph', "Node [" + reduced_sol + "] is already present (val="+str(self.sol_graph.node[reduced_sol]['value'])+") !")
+					self.log.log_event(time.time() - self.starting_time, 'Graph', "Node [" + reduced_sol + "] is already present (val="+str(self.sol_graph.node[reduced_sol]['value'])+") !")
 					# ajout du noeud adjacent a la liste des noeuds adjacents
 					# swap inverse (retour a l'etat initial de la list pour le swap suivant)
 					lst[i], lst[j] = lst[j], lst[i]
@@ -148,20 +161,23 @@ class Tabu:
 					self.sol_graph.add_node(
 						reduced_sol, time=self.starting_time - time.time(),
 						value=res[0], list=[x for x in lst])
-					#self.log.log_event(time.time() - self.starting_time, 'Graph', "Added new node : [" + str(res[0]) + "] " + reduced_sol)
+					self.log.log_event(time.time() - self.starting_time, 'Graph', "Added new node : [" + str(res[0]) + "] " + reduced_sol)
 					# on ajoute le lien vers ce noeud
 					self.sol_graph.add_edge(node, reduced_sol)
 					# swap inverse
 					lst[i], lst[j] = lst[j], lst[i]
 
 				# point on this node if it's the best adjacent node
-				if (best_adj[0] < 0 or self.sol_graph.node[reduced_sol]['value'] < best_adj[0]) and reduced_sol not in self.tabu_list:
-					best_adj = (self.sol_graph.node[reduced_sol]['value'], reduced_sol)
+				if (best_adj[0] < 0 or self.sol_graph.node[reduced_sol]['value'] < best_adj[0]):
+					if reduced_sol not in self.tabu_list:
+						best_adj = (self.sol_graph.node[reduced_sol]['value'], reduced_sol)
+					else:
+						self.log.log_event(time.time() - self.starting_time, 'State', "Solution: " + reduced_sol + " is in the tabu list ! Ignoring...")
 
 				# add this adjacent node to the tabu list
-				if reduced_sol not in self.tabu_list:
-					self.tabu_list.append(reduced_sol)
-					self.tabu_length += 1
+				# if reduced_sol not in self.tabu_list:
+				# 	self.tabu_list.append(reduced_sol)
+				# 	self.tabu_length += 1
 
 		# tronque la list taboue a la longueur
 		if self.tabu_length > self.tabu_max_length:

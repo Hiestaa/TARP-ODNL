@@ -1,8 +1,6 @@
 number of jobs, number of machines, initial seed, upper bound and lower bound :
-            6         5   873654221        1278        1232
+            4         3   25856        1278        1232
 processing times :
- 54 83 15 71 29 12
- 79  3 11 99 75 47
- 16 89 49 15 41 63
- 66 58 31 68 41 56
- 58 56 20 85 49 47
+ 54 83 15 71
+ 79  3 11 99
+ 16 89 49 15

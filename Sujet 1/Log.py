@@ -33,12 +33,13 @@ class Log:
   </body>
 </html>'''
 
-	def log_init_tabu(self, tabu_list_len, tabu_init_node):
+	def log_init_tabu(self, tabu_list_len, tabu_init_node, tabu_init_value):
 		self.f = open(self.filename, 'w')
 		self.log(self.openhtml)
 		self.log('<div class="column-group"><div class="large-100"><h1> TARP Logger <h1><h2>Tabu search</h2>')
 		self.log('<table class="ink-table bordered hover"><tr><th>Tabu list maximum length</th><td>' + str(tabu_list_len) + '</td></tr>')
-		self.log('<tr><th>Tabu starting node</th><td>' + tabu_init_node + '</td></tr></table>')
+		self.log('<tr><th>Tabu starting node</th><td>' + tabu_init_node + '</td></tr>')
+		self.log('<tr><th>Tabu starting node evaluation</th><td>' + str(tabu_init_value) + '</td></tr></table>')
 		self.log('<h3>Table filter</h3><div class="column-group gutters" id="type_filter"></div>')
 		self.log('<table class="ink-table alternating bordered hover"><thead><tr><th width="10%">Time</th><th width="20%">Type</th><th width="70%">Event</th></tr></thead><tbody>')
 
