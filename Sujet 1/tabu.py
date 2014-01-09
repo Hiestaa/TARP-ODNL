@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import numpy as np
 
 import random
 import time
@@ -33,10 +34,8 @@ class Tabu:
 		self.enable_display = enable_display
 		self.log = Log.Log('log/__tabu.log.html')
 
-		self.path = []
-		self.colorpath = []
-		self.colorpathstate = (0, 1, 0)
 		self.decreasing = True
+		self.nptasks = None
 
 
 	def run(self, it_max):
@@ -51,11 +50,6 @@ class Tabu:
 		self.log.log_init_tabu(self.tabu_max_length, self.best_sol[1], self.best_sol[0])
 		# cree le graphe avec un noeud correspondant a cet ordonnancement
 		self.sol_graph.add_node(
-			reduced_sol, time=self.starting_time - time.time(),
-			value=self.best_sol[0],
-			list=[x for x in self.sequence]
-		)
-		self.drawable_graph.add_node(
 			reduced_sol, time=self.starting_time - time.time(),
 			value=self.best_sol[0],
 			list=[x for x in self.sequence]
@@ -79,8 +73,10 @@ class Tabu:
 					if cur_node[1] in self.local_optimums:
 						self.log.log_event_error(time.time() - self.starting_time, 'Error', 'Local optimum: ['+str(cur_node[0])+'] '+str(cur_node[1])+' has already been found !')
 					else:
-						print 'Local optimum found: '+str(cur_node)+' !'
+						print 'Local optimum found: '+str(cur_node)+' ! Creating machines log...'
 						self.local_optimums.append(cur_node[1])
+						Evaluation(self.tasks, map(lambda arg: int(arg), cur_node[1].split('-')), cur_node[1]).simulation();
+						print "Done. Continuing..."
 					self.decreasing = False # on est plus sur une courbe descendante
 				# marque si on est sur une courbe descendante
 				if ret[0] < cur_node[0] or cur_node[0] < 0:
@@ -125,10 +121,6 @@ class Tabu:
 	def run_tabu(self, node):
 		# log le process sur ce noeud
 		self.log.log_event_info(time.time() - self.starting_time, 'State', "Processing node: " + node)
-		# ajout de ce noeud au path
-		self.path.append(node)
-		self.colorpath.append(self.colorpathstate)
-		self.colorpathstate = (self.colorpathstate[0], self.colorpathstate[1] * 0.99, self.colorpathstate[2])
 
 		#ajout de ce noeud a la liste taboue
 		if node not in self.tabu_list:
@@ -149,7 +141,7 @@ class Tabu:
 					self.sol_graph.add_edge(node, reduced_sol)
 					self.log.log_event(time.time() - self.starting_time, 'Graph', "Node [" + reduced_sol + "] is already present (val="+str(self.sol_graph.node[reduced_sol]['value'])+") !")
 					# ajout du noeud adjacent a la liste des noeuds adjacents
-					# swap inverse (retour a l'etat initial de la list pour le swap suivant)
+					# 	swap inverse (retour a l'etat initial de la list pour le swap suivant)
 					lst[i], lst[j] = lst[j], lst[i]
 				else:
 					#si non, on evalue la solution
@@ -179,7 +171,7 @@ class Tabu:
 				# 	self.tabu_list.append(reduced_sol)
 				# 	self.tabu_length += 1
 
-		# tronque la list taboue a la longueur
+		# tronque la liste taboue a la longueur
 		if self.tabu_length > self.tabu_max_length:
 			self.tabu_list = self.tabu_list[self.tabu_length - self.tabu_max_length:self.tabu_length]
 			self.tabu_length = len(self.tabu_list)
@@ -188,10 +180,6 @@ class Tabu:
 				print "List len error: ", self.tabu_length
 				exit()
 
-
-		# ajoute ce noeud a graph du path
-		#self.drawable_graph.add_node(best_adj[1], time=self.sol_graph.node[best_adj[1]]['time'],
-		#	value=self.sol_graph.node[best_adj[1]]['value'], list=self.sol_graph.node[best_adj[1]]['list'])
 		if best_adj[1] is not None:
 			self.log.log_event_info(time.time() - self.starting_time, 'State', 'Best adjacent node of ' + node + ': [' + str(best_adj[0]) + '] ' + best_adj[1])
 		else:
@@ -212,6 +200,7 @@ class Tabu:
 		self.lowerbound = int(conf[4])
 
 		f.readline() # jump header definitions
+		self.nptasks = np.empty([self.nb_op,self.nb_tasks])
 
 		for i in range(self.nb_tasks):
 			# initializing each task with an empty list of operation
@@ -222,40 +211,13 @@ class Tabu:
 			op = op.split()
 			for j in range(self.nb_tasks):
 				self.tasks[j].add_operation(int(op[j]))
+				self.nptasks[i][j] = op[j]
 
 		f.close()
 
 		random.seed(self.seed)
 
-		#self.parse_test()
-
-	def parse_test(self):
-		print "Number of jobs:", self.nb_tasks
-		print "Number of machines:", self.nb_op
-		print "Initial seed:", self.seed
-		print "Upper bound:", self.upperbound
-		print "Lower bound:", self.lowerbound
-
-		for task in self.tasks:
-			print ""
-			print "Task", task.id, ": ",
-			for o in task.oplist:
-				print o,
-		print ""
-
 	def init_ord(self):
 		self.sequence = [task.id for task in self.tasks]
 		random.shuffle(self.sequence)
-		print self.sequence
-		pass
 
-	def display_graph(self):
-		labels=dict((n,d['value']) for n,d in self.sol_graph.nodes(data=True))
-		pos = nx.spring_layout(self.sol_graph)
-		nx.draw_networkx_edges(self.sol_graph, pos=pos)
-		tabu = [x for x in self.tabu_list if x not in self.path]
-		remain = [x for x in self.sol_graph.nodes() if x not in tabu and x not in self.path]
-		nx.draw(self.sol_graph, pos=pos, nodelist=remain, node_size=1000, node_color='b')
-		nx.draw(self.sol_graph, pos=pos, nodelist=tabu, node_size=500, node_color='r')
-		nx.draw(self.sol_graph, pos=pos, nodelist=self.path, node_size=2000, node_color=self.colorpath)
-		plt.show()

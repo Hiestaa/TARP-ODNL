@@ -49,6 +49,12 @@ class Evaluation:
 		return tab[nbColonnes - 1][nbLines - 1]
 
 
+#  c = np.zeros((n + 1, m + 1))
+# for i in range(1, n + 1):
+#    for j in range(1, m + 1):
+#        c[i, j] = max(c[i - 1, j], c[i, j - 1]) + tasks[order[i - 1], j - 1]
+# return c[n, m]
+
 	def ontaskdone(self, task):
 		self.taskcomplete += 1
 		self.log.log_event_success(self.time, 'TaskEvent',"A task has been finished: " +str(task.id))
@@ -61,7 +67,7 @@ class Evaluation:
 			self.machinelist.assignTask(task, self.onopdone, self.ontaskdone)
 
 	def simulation(self):
-		self.log = Log.Log('log/' + id +'.log.html')
+		self.log = Log.Log('log/' + self.id +'.log.html')
 		self.log.log_init_tasklist(self.tasks)
 		self.log.log_event_info(self.time, 'Execution', "Execution started !")
 		task = self.tasks.pop(0)
