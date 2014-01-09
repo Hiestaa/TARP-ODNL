@@ -36,6 +36,7 @@ class Tabu:
 
 		self.decreasing = True
 		self.nptasks = None
+		self.nporder = None
 
 
 	def run(self, it_max):
@@ -45,20 +46,21 @@ class Tabu:
 		# initialise aleatoirement l'ordre des taches
 		self.init_ord()
 
-		reduced_sol = reduce(lambda a,b: str(a)+"-"+str(b), self.sequence)
-		self.best_sol = (Evaluation(self.tasks, self.sequence, reduced_sol).fast(), reduced_sol)
+		node_name = reduce(lambda a,b: str(a)+"-"+str(b), self.sequence)
+		self.best_sol = (Evaluation(self.tasks, self.sequence, node_name).fast(), node_name)
 		self.log.log_init_tabu(self.tabu_max_length, self.best_sol[1], self.best_sol[0])
 		# cree le graphe avec un noeud correspondant a cet ordonnancement
 		self.sol_graph.add_node(
-			reduced_sol, time=self.starting_time - time.time(),
+			node_name, time=self.starting_time - time.time(),
 			value=self.best_sol[0],
 			list=[x for x in self.sequence]
 		)
-		self.log.log_event_success(time.time() - self.starting_time, 'Result', "Initial node: [" + str(self.best_sol[0]) + "] " + reduced_sol)
+		self.log.log_event_success(time.time() - self.starting_time, 'Result', "Initial node: [" + str(self.best_sol[0]) + "] " + node_name)
 
 		# appelle run_rec qui va construire et parcourir le graphe des
 		#   suivant l'algorithme de recherche taboue de facon recursive
 		cur_node = self.best_sol
+		print "Starting. Initial node: [", self.best_sol[0], "]", self.sequence
 		for i in range(it_max):
 			print "Progress: ", (float(i)/float(it_max)*100), '%'
 			#pdb.set_trace()
@@ -130,46 +132,68 @@ class Tabu:
 		best_adj = (-1, None)
 		lst = self.sol_graph.node[node]['list']
 		# effectue toutes les combinaisons de permutations possibles sur l'ordonnancement
+		orderpos = 0
+		neighboors_name = []
 		for i in range(self.nb_tasks):
 			for j in xrange(i+1,self.nb_tasks):
 				lst[i], lst[j] = lst[j], lst[i] # swap
-				reduced_sol = reduce(lambda a,b: str(a)+"-"+str(b), lst) # calcule le nom du noeud
+				# copie dans la numpy_array des ordres
+				for k in range(self.nb_tasks):
+					self.nporder[orderpos][k] = lst[k]
+				orderpos += 1
+
+				# calcule le nom du noeud
+				node_name = reduce(lambda a,b: str(a)+"-"+str(b), lst)
+				neighboors_name.append(node_name)
 				#ajoute a la list taboue:
 				# test si le noeud existe deja
-				if reduced_sol in self.sol_graph:
+				if node_name in self.sol_graph:
 					# si oui, on ajoute juste un lien vers ce noeud
-					self.sol_graph.add_edge(node, reduced_sol)
-					self.log.log_event(time.time() - self.starting_time, 'Graph', "Node [" + reduced_sol + "] is already present (val="+str(self.sol_graph.node[reduced_sol]['value'])+") !")
+					self.sol_graph.add_edge(node, node_name)
+					self.log.log_event(time.time() - self.starting_time, 'Graph', "Node [" + node_name + "] is already present (val="+str(self.sol_graph.node[node_name]['value'])+") !")
 					# ajout du noeud adjacent a la liste des noeuds adjacents
 					# 	swap inverse (retour a l'etat initial de la list pour le swap suivant)
 					lst[i], lst[j] = lst[j], lst[i]
 				else:
 					#si non, on evalue la solution
-					res = (Evaluation(self.tasks, lst, reduced_sol).fast(), reduced_sol)
+					res = (Evaluation(self.tasks, lst, node_name).fast(), node_name)
 					# on verifie si elle est meilleure que celle trouvee
 					if res[0] < self.best_sol[0]:
 						self.best_sol = res
 					# on ajoute le noeud
 					self.sol_graph.add_node(
-						reduced_sol, time=self.starting_time - time.time(),
+						node_name, time=self.starting_time - time.time(),
 						value=res[0], list=[x for x in lst])
-					self.log.log_event(time.time() - self.starting_time, 'Graph', "Added new node : [" + str(res[0]) + "] " + reduced_sol)
+					self.log.log_event(time.time() - self.starting_time, 'Graph', "Added new node : [" + str(res[0]) + "] " + node_name)
 					# on ajoute le lien vers ce noeud
-					self.sol_graph.add_edge(node, reduced_sol)
+					self.sol_graph.add_edge(node, node_name)
 					# swap inverse
 					lst[i], lst[j] = lst[j], lst[i]
 
 				# point on this node if it's the best adjacent node
-				if (best_adj[0] < 0 or self.sol_graph.node[reduced_sol]['value'] < best_adj[0]):
-					if reduced_sol not in self.tabu_list:
-						best_adj = (self.sol_graph.node[reduced_sol]['value'], reduced_sol)
+				if (best_adj[0] < 0 or self.sol_graph.node[node_name]['value'] < best_adj[0]):
+					if node_name not in self.tabu_list:
+						best_adj = (self.sol_graph.node[node_name]['value'], node_name)
 					else:
-						self.log.log_event(time.time() - self.starting_time, 'State', "Solution: " + reduced_sol + " is in the tabu list ! Ignoring...")
+						self.log.log_event(time.time() - self.starting_time, 'State', "Solution: " + node_name + " is in the tabu list ! Ignoring...")
 
 				# add this adjacent node to the tabu list
-				# if reduced_sol not in self.tabu_list:
-				# 	self.tabu_list.append(reduced_sol)
+				# if node_name not in self.tabu_list:
+				# 	self.tabu_list.append(node_name)
 				# 	self.tabu_length += 1
+
+		# lance le calcul sur la carte graphique
+		result = np.empty([orderpos])
+		best = 0
+		best_index = 0
+		for x in range(orderpos):
+			if best is -1 or best > result[x]:
+				best_index = x
+				best = result[x]
+
+		best_name = neighboors_name[best_index]
+
+		sec_best_adj = (best, best_name)
 
 		# tronque la liste taboue a la longueur
 		if self.tabu_length > self.tabu_max_length:
@@ -200,7 +224,8 @@ class Tabu:
 		self.lowerbound = int(conf[4])
 
 		f.readline() # jump header definitions
-		self.nptasks = np.empty([self.nb_op,self.nb_tasks])
+		self.nptasks = np.empty([self.nb_op,self.nb_tasks], dtype=np.int32)
+		self.nporder = np.empty([self.nb_tasks*(self.nb_tasks+1)/2,self.nb_tasks], dtype=np.int32)
 
 		for i in range(self.nb_tasks):
 			# initializing each task with an empty list of operation
