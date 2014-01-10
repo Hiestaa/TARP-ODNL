@@ -48,7 +48,7 @@ class Tabu:
 
 		self.interesting = []
 		self.same_value_counter = 0
-		self.same_value_counter_max = 10
+		self.same_value_counter_max = 40
 
 		# sauvegarde le valeurs du chemin pour afficher un graphique
 		self.memory = []
@@ -99,6 +99,8 @@ class Tabu:
 				# test si on est sur la meme valeur qu'au tour precedent
 				if ret[0] == cur_node[0]:
 					self.same_value_counter += 1
+				else:
+					self.same_value_counter = 0
 
 
 				# si le resultat (best adj) est moins bon que le noeud precedent et qu'on etait sur une courbe descendente

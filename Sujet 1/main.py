@@ -10,11 +10,11 @@ else:
 
 #tabu = Tabu('test2.txt')
 #tabu.run(int(sys.argv[1]))
-tabu = Tabu('PB20x5_1.txt')
-tabu.run(int(sys.argv[1]))
-
-#tabu = Tabu('PB50x10_1.txt')
+#tabu = Tabu('PB20x5_1.txt')
 #tabu.run(int(sys.argv[1]))
+
+tabu = Tabu('PB50x10_1.txt')
+tabu.run(int(sys.argv[1]))
 
 
 #tabu = Tabu('PB100x10_1.txt')
