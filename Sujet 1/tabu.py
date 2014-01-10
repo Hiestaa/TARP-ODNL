@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import pygame
 import heapq as q
 
 import random
@@ -10,6 +11,7 @@ import os, pdb
 from task import Task
 from evaluation import Evaluation
 from guTarp import guTarp
+from graphx import Graphx
 import Log
 
 class Tabu:
@@ -46,7 +48,12 @@ class Tabu:
 
 		self.interesting = []
 		self.same_value_counter = 0
-		self.same_value_counter_max = 20
+		self.same_value_counter_max = 10
+
+		# sauvegarde le valeurs du chemin pour afficher un graphique
+		self.memory = []
+		self.it_max = 0
+		self.graphx = Graphx()
 
 	def init_node(self):
 		# initialise aleatoirement l'ordre des taches
@@ -57,6 +64,7 @@ class Tabu:
 
 
 	def run(self, it_max):
+		self.it_max = it_max
 		self.starting_time = time.time()
 		# parse le fichier d'entree pour construire la liste de taches
 		self.parse_input()
@@ -72,6 +80,16 @@ class Tabu:
 		cur_node = self.best_sol
 		print "Starting. Initial node: [", self.best_sol[0], "]", self.sequence
 		for i in range(it_max):
+			self.memory.append((float(i) / float(it_max) * 1024, 800 - (cur_node[0] - self.lowerbound)))
+			if cur_node[0] == self.upperbound:
+				break
+			else:
+				print self.best_sol[0], self.upperbound
+
+			# met a jour la memoire de l'historique
+			if i > 2 and self.plot():
+				break
+
 			if (i*100) % it_max == 0:
 				print "Progress: ", (float(i)/float(it_max)*100), '%'
 			ret = self.run_tabu(cur_node)
@@ -130,6 +148,10 @@ class Tabu:
 			print "No local optimum found"
 		print "Best solution found: " + str(self.best_sol)
 
+
+		done = False
+		while not done:
+			done = self.plot()
 	# lance la recherche taboue sur le noeud donne. Si de nouveaux noeuds sont ajoutes, ils seront evalues.
 	# le noeud avec le meilleur score est retourne.
 	def run_tabu(self, node):
@@ -235,3 +257,13 @@ class Tabu:
 		self.sequence = [task.id for task in self.tasks]
 		random.shuffle(self.sequence)
 
+	def plot(self):
+		self.graphx.update()
+		self.graphx.draw_lines([(0, 800 - (self.upperbound - self.lowerbound)), (1024, 800 - (self.upperbound - self.lowerbound))],
+			color=pygame.color.Color('red'))
+		self.graphx.draw_lines([(0, 800 - (self.best_sol[0] - self.lowerbound)), (1024, 800 - (self.best_sol[0] - self.lowerbound))],
+			color=pygame.color.Color('green'))
+		self.graphx.draw_lines(self.memory)
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+				return True
