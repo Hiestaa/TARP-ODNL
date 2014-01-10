@@ -83,8 +83,6 @@ class Tabu:
 			self.memory.append((float(i) / float(it_max) * 1024, 800 - (cur_node[0] - self.lowerbound)))
 			if cur_node[0] == self.upperbound:
 				break
-			else:
-				print self.best_sol[0], self.upperbound
 
 			# met a jour la memoire de l'historique
 			if i > 2 and self.plot():
@@ -148,6 +146,8 @@ class Tabu:
 			print "No local optimum found"
 		print "Best solution found: " + str(self.best_sol)
 
+
+		print "Executed in: ", str(time.time() - self.starting_time), "s."
 
 		done = False
 		while not done:
