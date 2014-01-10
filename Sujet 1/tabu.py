@@ -170,7 +170,6 @@ class Tabu:
 		lst = node[2]
 		# effectue toutes les combinaisons de permutations possibles sur l'ordonnancement
 		orderpos = 0
-		neighboors_name = []
 		for i in range(self.nb_tasks):
 			for j in xrange(i+1,self.nb_tasks):
 				lst[i], lst[j] = lst[j], lst[i] # swap
@@ -178,10 +177,6 @@ class Tabu:
 				for k in range(self.nb_tasks):
 					self.nporder[orderpos][k] = lst[k]
 				orderpos += 1
-
-				# calcule le nom du noeud
-				node_name = reduce(lambda a,b: str(a)+"-"+str(b), lst)
-				neighboors_name.append(node_name)
 
 				# swap inverse
 				lst[i], lst[j] = lst[j], lst[i]
@@ -192,17 +187,24 @@ class Tabu:
 		for x in range(orderpos):
 			q.heappush(ordered, (result[x][0], x))
 
-
+		# copie le meilleur et le noeud interessant voisin
 		best = q.heappop(ordered)
-		while neighboors_name[best[1]] in self.tabu_list:
+		best_list = [x for x in self.nporder[best[1]]]
+		best_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
+		while best_name in self.tabu_list:
 			best = q.heappop(ordered)
+			best_list = [x for x in self.nporder[best[1]]]
+			best_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
+
 		interest = q.nlargest(1, ordered)[0]
-		if neighboors_name[interest[1]] in self.tabu_list or interest[0] == best[0]:
+		interest_list = [x for x in self.nporder[interest[1]]]
+		interest_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
+		if interest_name in self.tabu_list or interest[0] == best[0]:
 			interest = None
 
-		best_adj = (best[0], neighboors_name[best[1]], [int(x) for x in neighboors_name[best[1]].split('-')])
+		best_adj = (best[0], best_name, best_list)
 		if interest:
-			interest_adj = (interest[0], neighboors_name[interest[1]], [int(x) for x in neighboors_name[interest[1]].split('-')])
+			interest_adj = (interest[0], interest_name, interest_list)
 			q.heappush(self.interesting, interest_adj)
 
 		# tronque la liste taboue a la longueur
