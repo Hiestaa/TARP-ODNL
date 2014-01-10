@@ -3,6 +3,7 @@ from task import Task
 import Log
 
 import time
+import os.path
 
 
 
@@ -66,8 +67,18 @@ class Evaluation:
 			task.reinit()
 			self.machinelist.assignTask(task, self.onopdone, self.ontaskdone)
 
+	def findUniqueName(self, name):
+		lst = name.split('-')
+		for x in range(len(lst)):
+			if x is not 0:
+				test = reduce(lambda a, b: a + '-' + b,lst[:x])
+				if not os.path.isfile('log/' + test + '.log.html'):
+					return 'log/' + test + '.log.html'
+		return 'log/' + name + '.log.html'
+
+
 	def simulation(self):
-		self.log = Log.Log('log/' + self.id +'.log.html')
+		self.log = Log.Log(self.findUniqueName(self.id))
 		self.log.log_init_tasklist(self.tasks)
 		self.log.log_event_info(self.time, 'Execution', "Execution started !")
 		task = self.tasks.pop(0)

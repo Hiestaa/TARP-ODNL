@@ -12,9 +12,9 @@ t = time.time()
 #Tabu('test2.txt').run(int(sys.argv[1]))
 #Tabu('PB20x5_1.txt').run(int(sys.argv[1]))
 
-#Tabu('PB50x10_1.txt').run(int(sys.argv[1]))
+Tabu('PB50x10_1.txt').run(int(sys.argv[1]))
 
 
-Tabu('PB100x10_1.txt').run(int(sys.argv[1]))
+#Tabu('PB100x10_1.txt').run(int(sys.argv[1]))
 
 print "Executed in: ", str(time.time() - t), "s."
