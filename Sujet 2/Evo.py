@@ -43,11 +43,22 @@ class Evo :
 		employees = []
 		lenPathList = self.pathList.shape[0]
 		for i in xrange(lenPathList):
-			emp = []
+			fiveEmp = []
+			for k in xrange(5):
+				emp = []
+				for j in xrange(5):
+					day = []
+					emp.append(day)
+				fiveEmp.append(emp)
 			for j in xrange(5):
-				day = [self.pathList[i][Const.ID_PATH]]
-				emp.append(day)
-			employees.append(emp)
+				fiveEmp[j][j].append(self.pathList[i][Const.ID_PATH])
+			employees += fiveEmp
+
+			# emp = []
+			# for j in xrange(5):
+			# 	day = [self.pathList[i][Const.ID_PATH]]
+			# 	emp.append(day)
+			# employees.append(emp)
 
 		print employees
 
@@ -154,13 +165,17 @@ class Evo :
 
 	def mutation(self, employees) :
 		# print 'mutation'
-		rand = random.random() * 3
-		if rand <= 1 :
-			return self.swapOnEmployee(employees)
-		elif rand <= 2 :
-			return self.swapBetweenEmployee(employees)
-		else :
+		ratio = len(employees) / len(self.pathList) * 5
+		if random.random() < ratio :
 			return self.moveOnePathOnAnotherEmployee(employees)
+		else :
+			rand = random.random() * 3
+			if rand <= 1 :
+				return self.swapOnEmployee(employees)
+			elif rand <= 2 :
+				return self.swapBetweenEmployee(employees)
+			else :
+				return self.moveOnePathOnAnotherEmployee(employees)
 
 	def swapOnEmployee(self, employees) :
 		# print 'swapOnEmployee'
