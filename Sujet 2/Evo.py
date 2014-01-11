@@ -1,9 +1,12 @@
 import numpy
 import random
+import pygame
+import heapq
+import pdb
 
 from eval import Eval
 from const import Const
-import heapq
+from graphx import Graphx
 
 class Evo :
 
@@ -11,6 +14,27 @@ class Evo :
 		self.pathList = pathList
 		self.evaluator = Eval(pathList)
 		self.population = []
+
+		self.memory = [[] for x in range(10)]
+		self.graphx = Graphx()
+		self.colors = [
+			pygame.color.Color(0, 255, 0, 0), # green = total
+			#pygame.color.Color(128, 255, 0, 0),
+			#pygame.color.Color(0, 255, 128, 0),
+			#pygame.color.Color(128, 255, 255, 0),
+			#pygame.color.Color(255, 255, 128, 0),
+			#pygame.color.Color(255, 255, 0, 0),
+			#pygame.color.Color(255, 128, 0, 0),
+			#pygame.color.Color(255, 128, 0, 0),
+			#pygame.color.Color(255, 128, 128, 0),
+			#pygame.color.Color(255, 0, 0, 0),
+
+			pygame.color.Color(255, 255, 0, 0), # yellow = NB_EMPL
+			pygame.color.Color(0, 0, 255, 0),	# blue = PATH_INV
+			pygame.color.Color(255, 0, 255, 0),	# magenta = OVER_DAY_LENGTH
+			pygame.color.Color(255, 0, 0, 0),	# red = OVER_WORK_LENGTH
+		]
+
 
 	def eval(self, sol):
 		return self.evaluator.eval(sol)
@@ -31,6 +55,10 @@ class Evo :
 
 		# print 'employees', employees
 		for i in xrange(it_max):
+
+			if i > 3 and self.plot():
+				break
+
 			llen = len(self.population)
 			pop = heapq.nsmallest(llen, self.population)
 			for j in xrange(llen):
@@ -41,21 +69,14 @@ class Evo :
 					heapq.heappush(self.population, (self.eval(dupli),dupli))
 
 			#self.population = heapq.nsmallest(10, self.population)
-			newpop = []
-			newpoplen = 0
-			prev = None
-			while newpoplen < 10 and len(self.population) > 0:
-				tmp = heapq.heappop(self.population)
-				if prev is None or tmp[0] != prev[0]:
-					heapq.heappush(newpop, tmp)
-					prev = tmp
-					newpoplen += 1
-				elif not self.same(prev[1], tmp[1]):
-					heapq.heappush(newpop, tmp)
-					prev = tmp
-					newpoplen += 1
-
-			self.population = newpop
+			best = heapq.nsmallest(1, self.population)
+			evalres = self.evaluator.eval_for_mem(best[0][1])
+			for m in xrange(5):
+				print evalres[m],
+				self.memory[m].append((5 + float(i - 1) / float(it_max) * 1024, 700 - (evalres[m]) / 300))
+			print ""
+			if i > 1:
+				self.population = self.select2(10)
 
 			print "Iteration: ", i, "Sol:\t", reduce(lambda a,b: str(a)+"\t"+str(b),map(lambda x: x[0], heapq.nsmallest(5, self.population)))
 
@@ -64,6 +85,60 @@ class Evo :
 		#self.evaluator.pp(heapq.nsmallest(2, self.population)[1][1])
 		#print heapq.heappop(self.population)
 		#print heapq.heappop(self.population)
+
+		done = False
+		while not done:
+			done = self.plot()
+
+	def select1(self, nb):
+		newpop = []
+		newpoplen = 0
+		prev = None
+		while newpoplen < nb and len(self.population) > 0:
+			tmp = heapq.heappop(self.population)
+			if prev is None or tmp[0] != prev[0]:
+				heapq.heappush(newpop, tmp)
+				prev = tmp
+				newpoplen += 1
+			elif not self.same(prev[1], tmp[1]):
+				heapq.heappush(newpop, tmp)
+				prev = tmp
+				newpoplen += 1
+		return newpop
+
+	def select2(self, nb):
+		newpop = []
+		newpoplen = 0
+		prev = None
+		nb_best = 0
+		best = None
+		while newpoplen < nb and len(self.population) > 0:
+			tmp = heapq.heappop(self.population)
+			if best is None:
+				best = tmp
+			if prev is None or tmp[0] != prev[0]:
+				heapq.heappush(newpop, tmp)
+				prev = tmp
+				if tmp[0] == best[0]:
+					nb_best += 1
+				newpoplen += 1
+			elif not self.same(prev[1], tmp[1]):
+				heapq.heappush(newpop, tmp)
+				prev = tmp
+				if tmp[0] == best[0]:
+					nb_best += 1
+
+		# selection aleatoire parmis les meilleurs
+		lst = heapq.nsmallest(nb_best, newpop)
+		tmp = nb/2
+		if (tmp > nb_best):
+			tmp = nb_best
+		newpop2 = random.sample(lst, tmp)
+		# selection aleatoire parmis les autres
+		tmp = nb-tmp
+		lst = heapq.nlargest(len(newpop) - nb_best, newpop)
+		newpop2 = newpop2 + random.sample(lst, tmp)
+		return newpop2
 
 	def duplique(self, employees) :
 		employeesDupli = []
@@ -246,4 +321,14 @@ class Evo :
 						return 0
 		return 1
 
-
+	def plot(self):
+		self.graphx.update()
+		# self.graphx.draw_lines([(0, 700 - (self.upperbound - self.lowerbound)), (1024, 700 - (self.upperbound - self.lowerbound))],
+		# 	color=pygame.color.Color('red'))
+		# self.graphx.draw_lines([(0, 700 - (self.best_sol[0] - self.lowerbound)), (1024, 700 - (self.best_sol[0] - self.lowerbound))],
+		# 	color=pygame.color.Color('green'))
+		for m in xrange(5):
+			self.graphx.draw_lines(self.memory[m], self.colors[m])
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+				return True

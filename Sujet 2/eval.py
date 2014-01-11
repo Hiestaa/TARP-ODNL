@@ -46,6 +46,21 @@ class Eval:
 
 		return self.NB_EMPL * 200 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10
 
+	def eval_for_mem(self, sol):
+		self.init_compute()
+		for x in range(len(sol)): # for each employee
+			self.onNewEmployee(x)
+			for y in range(len(sol[x])): # for each day
+				self.onNewDay(y)
+				for z in range(len(sol[x][y])): # for each path
+					self.onNextPath(z, self.pathList[sol[x][y][z]][Const.START_LOC], self.pathList[sol[x][y][z]][Const.END_LOC],
+						self.pathList[sol[x][y][z]][Const.START_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.START_MIN],
+						self.pathList[sol[x][y][z]][Const.END_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.END_MIN])
+				self.onEndDay()
+
+		return (self.NB_EMPL * 200 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10,
+			self.NB_EMPL * 200, self.PATH_INV * 1000, self.OVER_DAY_LEN * 10, self.OVER_WORK_LEN * 10)
+
 	def pp(self, sol):
 		self.init_compute()
 		for x in range(len(sol)): # for each employee
