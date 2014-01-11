@@ -8,13 +8,14 @@ if len(sys.argv) < 2:
 else:
 	print sys.argv[0], sys.argv[1]
 
-t = time.time()
-#Tabu('test2.txt').run(int(sys.argv[1]))
-#Tabu('PB20x5_1.txt').run(int(sys.argv[1]))
+#tabu = Tabu('test2.txt')
+#tabu.run(int(sys.argv[1]))
+#tabu = Tabu('PB20x5_1.txt')
+#tabu.run(int(sys.argv[1]))
 
-Tabu('PB50x10_1.txt').run(int(sys.argv[1]))
+tabu = Tabu('PB50x10_1.txt')
+tabu.run(int(sys.argv[1]))
 
 
-#Tabu('PB100x10_1.txt').run(int(sys.argv[1]))
-
-print "Executed in: ", str(time.time() - t), "s."
+#tabu = Tabu('PB100x10_1.txt')
+#tabu.run(int(sys.argv[1]))

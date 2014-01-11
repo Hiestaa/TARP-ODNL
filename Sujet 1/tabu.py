@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import pygame
 import heapq as q
 
 import random
@@ -10,6 +11,7 @@ import os, pdb
 from task import Task
 from evaluation import Evaluation
 from guTarp import guTarp
+from graphx import Graphx
 import Log
 
 class Tabu:
@@ -46,7 +48,12 @@ class Tabu:
 
 		self.interesting = []
 		self.same_value_counter = 0
-		self.same_value_counter_max = 20
+		self.same_value_counter_max = 40
+
+		# sauvegarde le valeurs du chemin pour afficher un graphique
+		self.memory = []
+		self.it_max = 0
+		self.graphx = Graphx()
 
 	def init_node(self):
 		# initialise aleatoirement l'ordre des taches
@@ -57,6 +64,7 @@ class Tabu:
 
 
 	def run(self, it_max):
+		self.it_max = it_max
 		self.starting_time = time.time()
 		# parse le fichier d'entree pour construire la liste de taches
 		self.parse_input()
@@ -72,6 +80,14 @@ class Tabu:
 		cur_node = self.best_sol
 		print "Starting. Initial node: [", self.best_sol[0], "]", self.sequence
 		for i in range(it_max):
+			self.memory.append((float(i) / float(it_max) * 1024, 800 - (cur_node[0] - self.lowerbound)))
+			if cur_node[0] == self.upperbound:
+				break
+
+			# met a jour la memoire de l'historique
+			if i > 2 and self.plot():
+				break
+
 			if (i*100) % it_max == 0:
 				print "Progress: ", (float(i)/float(it_max)*100), '%'
 			ret = self.run_tabu(cur_node)
@@ -83,6 +99,8 @@ class Tabu:
 				# test si on est sur la meme valeur qu'au tour precedent
 				if ret[0] == cur_node[0]:
 					self.same_value_counter += 1
+				else:
+					self.same_value_counter = 0
 
 
 				# si le resultat (best adj) est moins bon que le noeud precedent et qu'on etait sur une courbe descendente
@@ -130,6 +148,12 @@ class Tabu:
 			print "No local optimum found"
 		print "Best solution found: " + str(self.best_sol)
 
+
+		print "Executed in: ", str(time.time() - self.starting_time), "s."
+
+		done = False
+		while not done:
+			done = self.plot()
 	# lance la recherche taboue sur le noeud donne. Si de nouveaux noeuds sont ajoutes, ils seront evalues.
 	# le noeud avec le meilleur score est retourne.
 	def run_tabu(self, node):
@@ -146,7 +170,6 @@ class Tabu:
 		lst = node[2]
 		# effectue toutes les combinaisons de permutations possibles sur l'ordonnancement
 		orderpos = 0
-		neighboors_name = []
 		for i in range(self.nb_tasks):
 			for j in xrange(i+1,self.nb_tasks):
 				lst[i], lst[j] = lst[j], lst[i] # swap
@@ -154,10 +177,6 @@ class Tabu:
 				for k in range(self.nb_tasks):
 					self.nporder[orderpos][k] = lst[k]
 				orderpos += 1
-
-				# calcule le nom du noeud
-				node_name = reduce(lambda a,b: str(a)+"-"+str(b), lst)
-				neighboors_name.append(node_name)
 
 				# swap inverse
 				lst[i], lst[j] = lst[j], lst[i]
@@ -168,17 +187,24 @@ class Tabu:
 		for x in range(orderpos):
 			q.heappush(ordered, (result[x][0], x))
 
-
+		# copie le meilleur et le noeud interessant voisin
 		best = q.heappop(ordered)
-		while neighboors_name[best[1]] in self.tabu_list:
+		best_list = [x for x in self.nporder[best[1]]]
+		best_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
+		while best_name in self.tabu_list:
 			best = q.heappop(ordered)
+			best_list = [x for x in self.nporder[best[1]]]
+			best_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
+
 		interest = q.nlargest(1, ordered)[0]
-		if neighboors_name[interest[1]] in self.tabu_list or interest[0] == best[0]:
+		interest_list = [x for x in self.nporder[interest[1]]]
+		interest_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
+		if interest_name in self.tabu_list or interest[0] == best[0]:
 			interest = None
 
-		best_adj = (best[0], neighboors_name[best[1]], [int(x) for x in neighboors_name[best[1]].split('-')])
+		best_adj = (best[0], best_name, best_list)
 		if interest:
-			interest_adj = (interest[0], neighboors_name[interest[1]], [int(x) for x in neighboors_name[interest[1]].split('-')])
+			interest_adj = (interest[0], interest_name, interest_list)
 			q.heappush(self.interesting, interest_adj)
 
 		# tronque la liste taboue a la longueur
@@ -235,3 +261,13 @@ class Tabu:
 		self.sequence = [task.id for task in self.tasks]
 		random.shuffle(self.sequence)
 
+	def plot(self):
+		self.graphx.update()
+		self.graphx.draw_lines([(0, 800 - (self.upperbound - self.lowerbound)), (1024, 800 - (self.upperbound - self.lowerbound))],
+			color=pygame.color.Color('red'))
+		self.graphx.draw_lines([(0, 800 - (self.best_sol[0] - self.lowerbound)), (1024, 800 - (self.best_sol[0] - self.lowerbound))],
+			color=pygame.color.Color('green'))
+		self.graphx.draw_lines(self.memory)
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+				return True
