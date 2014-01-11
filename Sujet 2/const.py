@@ -1,0 +1,8 @@
+class Const:
+	ID_PATH = 0
+	START_LOC = 1
+	END_LOC = 2
+	START_HOUR = 3
+	START_MIN = 4
+	END_HOUR = 5
+	END_MIN = 6
