@@ -1,5 +1,4 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import numpy as np
 import pygame
 import heapq as q
@@ -23,7 +22,7 @@ class Tabu:
 				os.remove('log/' + fname)
 		self.tabu_list = []
 		self.tabu_length = 0
-		self.tabu_max_length = 10000
+		self.tabu_max_length = 100000
 		self.tabu_min_length = 1
 
 		self.input_file = input_file
@@ -48,7 +47,7 @@ class Tabu:
 
 		self.interesting = []
 		self.same_value_counter = 0
-		self.same_value_counter_max = 40
+		self.same_value_counter_max = 10
 
 		# sauvegarde le valeurs du chemin pour afficher un graphique
 		self.memory = []
@@ -77,10 +76,12 @@ class Tabu:
 
 		# appelle run_rec qui va construire et parcourir le graphe des
 		#   suivant l'algorithme de recherche taboue de facon recursive
+
+		i = 0
 		cur_node = self.best_sol
 		print "Starting. Initial node: [", self.best_sol[0], "]", self.sequence
-		for i in xrange(it_max):
-			self.memory.append((float(i) / float(it_max) * 1024, 800 - (cur_node[0] - self.lowerbound)))
+		for i in range(it_max):
+			self.memory.append((float(i) / float(it_max) * 1024, 700 - (cur_node[0] - self.lowerbound)))
 			if cur_node[0] == self.upperbound:
 				break
 
@@ -150,7 +151,7 @@ class Tabu:
 
 
 		print "Executed in: ", str(time.time() - self.starting_time), "s."
-
+		print "Interation:", i
 		done = False
 		while not done:
 			done = self.plot()
@@ -170,13 +171,18 @@ class Tabu:
 		lst = node[2]
 		# effectue toutes les combinaisons de permutations possibles sur l'ordonnancement
 		orderpos = 0
-		for i in xrange(self.nb_tasks):
+		neighboors_name = []
+		for i in range(self.nb_tasks):
 			for j in xrange(i+1,self.nb_tasks):
 				lst[i], lst[j] = lst[j], lst[i] # swap
 				# copie dans la numpy_array des ordres
-				for k in xrange(self.nb_tasks):
+				for k in range(self.nb_tasks):
 					self.nporder[orderpos][k] = lst[k]
 				orderpos += 1
+
+				# calcule le nom du noeud
+				node_name = reduce(lambda a,b: str(a)+"-"+str(b), lst)
+				neighboors_name.append(node_name)
 
 				# swap inverse
 				lst[i], lst[j] = lst[j], lst[i]
@@ -184,27 +190,20 @@ class Tabu:
 		# lance le calcul sur la carte graphique
 		result = self.gpucomputer.compute(self.nporder)
 		ordered = []
-		for x in xrange(orderpos):
+		for x in range(orderpos):
 			q.heappush(ordered, (result[x][0], x))
 
-		# copie le meilleur et le noeud interessant voisin
-		best = q.heappop(ordered)
-		best_list = [x for x in self.nporder[best[1]]]
-		best_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
-		while best_name in self.tabu_list:
-			best = q.heappop(ordered)
-			best_list = [x for x in self.nporder[best[1]]]
-			best_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
 
+		best = q.heappop(ordered)
+		while neighboors_name[best[1]] in self.tabu_list:
+			best = q.heappop(ordered)
 		interest = q.nlargest(1, ordered)[0]
-		interest_list = [x for x in self.nporder[interest[1]]]
-		interest_name = reduce(lambda a,b: str(a)+"-"+str(b), best_list)
-		if interest_name in self.tabu_list or interest[0] == best[0]:
+		if neighboors_name[interest[1]] in self.tabu_list or interest[0] == best[0]:
 			interest = None
 
-		best_adj = (best[0], best_name, best_list)
+		best_adj = (best[0], neighboors_name[best[1]], [int(x) for x in neighboors_name[best[1]].split('-')])
 		if interest:
-			interest_adj = (interest[0], interest_name, interest_list)
+			interest_adj = (interest[0], neighboors_name[interest[1]], [int(x) for x in neighboors_name[interest[1]].split('-')])
 			q.heappush(self.interesting, interest_adj)
 
 		# tronque la liste taboue a la longueur
@@ -239,14 +238,14 @@ class Tabu:
 		self.nptasks = np.empty([self.nb_op,self.nb_tasks], dtype=np.int32)
 		self.nporder = np.empty([self.nb_tasks*(self.nb_tasks-1)/2,self.nb_tasks], dtype=np.int32)
 
-		for i in xrange(self.nb_tasks):
+		for i in range(self.nb_tasks):
 			# initializing each task with an empty list of operation
 			self.tasks.append(Task(i, []))
 
-		for i in xrange(self.nb_op):
+		for i in range(self.nb_op):
 			op = f.readline() # get the ith job for each task
 			op = op.split()
-			for j in xrange(self.nb_tasks):
+			for j in range(self.nb_tasks):
 				self.tasks[j].add_operation(int(op[j]))
 				self.nptasks[i][j] = op[j]
 
@@ -263,9 +262,9 @@ class Tabu:
 
 	def plot(self):
 		self.graphx.update()
-		self.graphx.draw_lines([(0, 800 - (self.upperbound - self.lowerbound)), (1024, 800 - (self.upperbound - self.lowerbound))],
+		self.graphx.draw_lines([(0, 700 - (self.upperbound - self.lowerbound)), (1024, 700 - (self.upperbound - self.lowerbound))],
 			color=pygame.color.Color('red'))
-		self.graphx.draw_lines([(0, 800 - (self.best_sol[0] - self.lowerbound)), (1024, 800 - (self.best_sol[0] - self.lowerbound))],
+		self.graphx.draw_lines([(0, 700 - (self.best_sol[0] - self.lowerbound)), (1024, 700 - (self.best_sol[0] - self.lowerbound))],
 			color=pygame.color.Color('green'))
 		self.graphx.draw_lines(self.memory)
 		for event in pygame.event.get():
