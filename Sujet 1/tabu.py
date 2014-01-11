@@ -79,7 +79,7 @@ class Tabu:
 		#   suivant l'algorithme de recherche taboue de facon recursive
 		cur_node = self.best_sol
 		print "Starting. Initial node: [", self.best_sol[0], "]", self.sequence
-		for i in range(it_max):
+		for i in xrange(it_max):
 			self.memory.append((float(i) / float(it_max) * 1024, 800 - (cur_node[0] - self.lowerbound)))
 			if cur_node[0] == self.upperbound:
 				break
@@ -170,11 +170,11 @@ class Tabu:
 		lst = node[2]
 		# effectue toutes les combinaisons de permutations possibles sur l'ordonnancement
 		orderpos = 0
-		for i in range(self.nb_tasks):
+		for i in xrange(self.nb_tasks):
 			for j in xrange(i+1,self.nb_tasks):
 				lst[i], lst[j] = lst[j], lst[i] # swap
 				# copie dans la numpy_array des ordres
-				for k in range(self.nb_tasks):
+				for k in xrange(self.nb_tasks):
 					self.nporder[orderpos][k] = lst[k]
 				orderpos += 1
 
@@ -184,7 +184,7 @@ class Tabu:
 		# lance le calcul sur la carte graphique
 		result = self.gpucomputer.compute(self.nporder)
 		ordered = []
-		for x in range(orderpos):
+		for x in xrange(orderpos):
 			q.heappush(ordered, (result[x][0], x))
 
 		# copie le meilleur et le noeud interessant voisin
@@ -239,14 +239,14 @@ class Tabu:
 		self.nptasks = np.empty([self.nb_op,self.nb_tasks], dtype=np.int32)
 		self.nporder = np.empty([self.nb_tasks*(self.nb_tasks-1)/2,self.nb_tasks], dtype=np.int32)
 
-		for i in range(self.nb_tasks):
+		for i in xrange(self.nb_tasks):
 			# initializing each task with an empty list of operation
 			self.tasks.append(Task(i, []))
 
-		for i in range(self.nb_op):
+		for i in xrange(self.nb_op):
 			op = f.readline() # get the ith job for each task
 			op = op.split()
-			for j in range(self.nb_tasks):
+			for j in xrange(self.nb_tasks):
 				self.tasks[j].add_operation(int(op[j]))
 				self.nptasks[i][j] = op[j]
 
