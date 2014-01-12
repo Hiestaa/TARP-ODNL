@@ -31,6 +31,7 @@ class Eval:
 		# au cours de l'analyse, arrive du precedent trajet
 		self.last_path_end_loc = None
 		self.last_path_end_time = None
+		self.day_nb_path = 0
 
 	def eval(self, sol):
 		self.init_compute()
@@ -44,7 +45,7 @@ class Eval:
 						self.pathList[sol[x][y][z]][Const.END_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.END_MIN])
 				self.onEndDay()
 
-		return self.NB_EMPL * 200 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10
+		return self.NB_EMPL * 400 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10
 
 	def eval_for_mem(self, sol):
 		self.init_compute()
@@ -58,8 +59,8 @@ class Eval:
 						self.pathList[sol[x][y][z]][Const.END_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.END_MIN])
 				self.onEndDay()
 
-		return (self.NB_EMPL * 200 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10,
-			self.NB_EMPL * 200, self.PATH_INV * 1000, self.OVER_DAY_LEN * 10, self.OVER_WORK_LEN * 10)
+		return (self.NB_EMPL * 400 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10,
+			self.NB_EMPL * 400, self.PATH_INV * 1000, self.OVER_DAY_LEN * 10, self.OVER_WORK_LEN * 10)
 
 	def pp(self, sol):
 		self.init_compute()
@@ -105,6 +106,7 @@ class Eval:
 		self.cur_empl_day_len = 0
 		self.cur_empl_work_len = 0
 		self.day_end_time = None
+		self.day_nb_path = 0
 
 	def onEndDay(self, pp=False):
 		# sauvegarde le temps total de travail de la journee passee
@@ -124,8 +126,12 @@ class Eval:
 			if pp:
 				print "\t\tDay has TOO MUCH WORK of:", self.cur_empl_work_len, " - 300 = ", self.cur_empl_work_len - 300
 
+		if self.day_nb_path == 0:
+			self.last_path_end_loc = None
+
 
 	def onNextPath(self, id, start_loc, end_loc, start_time, end_time, pp=False):
+		self.day_nb_path += 1
 		if self.onNextPathLocCheck(start_loc, end_loc, pp):
 			self.onNextPathTimeCheck(start_time, end_time, pp)
 
