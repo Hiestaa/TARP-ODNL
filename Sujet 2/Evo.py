@@ -10,10 +10,11 @@ from graphx import Graphx
 
 class Evo :
 
-	def __init__(self, pathList):
+	def __init__(self, pathList, dict_id):
 		self.pathList = pathList
 		self.evaluator = Eval(pathList)
 		self.population = []
+		self.dict_id = dict_id
 
 		self.memory = [[] for x in range(10)]
 		self.graphx = Graphx()
@@ -37,7 +38,7 @@ class Evo :
 
 
 	def eval(self, sol):
-		return self.evaluator.eval(sol)
+		return self.evaluator.eval(sol, self.dict_id)
 
 	def run(self, it_max) :
 		employees = []
@@ -81,7 +82,7 @@ class Evo :
 
 			#self.population = heapq.nsmallest(10, self.population)
 			best = heapq.nsmallest(1, self.population)
-			evalres = self.evaluator.eval_for_mem(best[0][1])
+			evalres = self.evaluator.eval_for_mem(best[0][1], self.dict_id)
 			for m in xrange(5):
 				print evalres[m],
 				self.memory[m].append((5 + float(i - 1) / float(it_max) * 1024, 700 - (evalres[m]) / 300))
@@ -91,7 +92,7 @@ class Evo :
 
 			print "Iteration: ", i, "Sol:\t", reduce(lambda a,b: str(a)+"\t"+str(b),map(lambda x: x[0], heapq.nsmallest(5, self.population)))
 
-		self.evaluator.pp(heapq.nsmallest(1, self.population)[0][1])
+		self.evaluator.pp(heapq.nsmallest(1, self.population)[0][1], self.dict_id)
 		print "Solution Value: ", heapq.nsmallest(1, self.population)[0][0]
 		#self.evaluator.pp(heapq.nsmallest(2, self.population)[1][1])
 		#print heapq.heappop(self.population)

@@ -33,36 +33,36 @@ class Eval:
 		self.last_path_end_time = None
 		self.day_nb_path = 0
 
-	def eval(self, sol):
+	def eval(self, sol, dict_id):
 		self.init_compute()
 		for x in range(len(sol)): # for each employee
 			self.onNewEmployee(x)
 			for y in range(len(sol[x])): # for each day
 				self.onNewDay(y)
 				for z in range(len(sol[x][y])): # for each path
-					self.onNextPath(z, self.pathList[sol[x][y][z]][Const.START_LOC], self.pathList[sol[x][y][z]][Const.END_LOC],
-						self.pathList[sol[x][y][z]][Const.START_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.START_MIN],
-						self.pathList[sol[x][y][z]][Const.END_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.END_MIN])
+					self.onNextPath(z, self.pathList[dict_id[sol[x][y][z]]][Const.START_LOC], self.pathList[dict_id[sol[x][y][z]]][Const.END_LOC],
+						self.pathList[dict_id[sol[x][y][z]]][Const.START_HOUR] * 60 + self.pathList[dict_id[sol[x][y][z]]][Const.START_MIN],
+						self.pathList[dict_id[sol[x][y][z]]][Const.END_HOUR] * 60 + self.pathList[dict_id[sol[x][y][z]]][Const.END_MIN])
 				self.onEndDay()
 
-		return self.NB_EMPL * 400 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10
+		return self.NB_EMPL * 20 + self.PATH_INV * 100 + self.OVER_DAY_LEN * 1 + self.OVER_WORK_LEN * 1
 
-	def eval_for_mem(self, sol):
+	def eval_for_mem(self, sol, dict_id):
 		self.init_compute()
 		for x in range(len(sol)): # for each employee
 			self.onNewEmployee(x)
 			for y in range(len(sol[x])): # for each day
 				self.onNewDay(y)
 				for z in range(len(sol[x][y])): # for each path
-					self.onNextPath(z, self.pathList[sol[x][y][z]][Const.START_LOC], self.pathList[sol[x][y][z]][Const.END_LOC],
-						self.pathList[sol[x][y][z]][Const.START_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.START_MIN],
-						self.pathList[sol[x][y][z]][Const.END_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.END_MIN])
+					self.onNextPath(z, self.pathList[dict_id[sol[x][y][z]]][Const.START_LOC], self.pathList[dict_id[sol[x][y][z]]][Const.END_LOC],
+						self.pathList[dict_id[sol[x][y][z]]][Const.START_HOUR] * 60 + self.pathList[dict_id[sol[x][y][z]]][Const.START_MIN],
+						self.pathList[dict_id[sol[x][y][z]]][Const.END_HOUR] * 60 + self.pathList[dict_id[sol[x][y][z]]][Const.END_MIN])
 				self.onEndDay()
 
-		return (self.NB_EMPL * 400 + self.PATH_INV * 1000 + self.OVER_DAY_LEN * 10 + self.OVER_WORK_LEN * 10,
-			self.NB_EMPL * 400, self.PATH_INV * 1000, self.OVER_DAY_LEN * 10, self.OVER_WORK_LEN * 10)
+		return (self.NB_EMPL * 20 + self.PATH_INV * 100 + self.OVER_DAY_LEN * 1 + self.OVER_WORK_LEN * 1,
+			self.NB_EMPL * 20, self.PATH_INV * 100, self.OVER_DAY_LEN * 1, self.OVER_WORK_LEN * 1)
 
-	def pp(self, sol):
+	def pp(self, sol, dict_id):
 		self.init_compute()
 		for x in range(len(sol)): # for each employee
 			print "Employee: ", x
@@ -72,12 +72,12 @@ class Eval:
 				self.onNewDay(y)
 				for z in range(len(sol[x][y])): # for each pathlist
 					print "\t\tTrajet: ", z
-					print "\t\t\tStart:", chr(self.pathList[sol[x][y][z]][Const.START_LOC]), "End: ", chr(self.pathList[sol[x][y][z]][Const.END_LOC])
-					print "\t\t\tStart time:", str(self.pathList[sol[x][y][z]][Const.START_HOUR])+":"+str(self.pathList[sol[x][y][z]][Const.START_MIN]),
-					print "End time: ", str(self.pathList[sol[x][y][z]][Const.END_HOUR])+":"+str(self.pathList[sol[x][y][z]][Const.END_MIN])
-					self.onNextPath(z, self.pathList[sol[x][y][z]][Const.START_LOC], self.pathList[sol[x][y][z]][Const.END_LOC],
-						self.pathList[sol[x][y][z]][Const.START_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.START_MIN],
-						self.pathList[sol[x][y][z]][Const.END_HOUR] * 60 + self.pathList[sol[x][y][z]][Const.END_MIN],
+					print "\t\t\tStart:", chr(self.pathList[dict_id[sol[x][y][z]]][Const.START_LOC]), "End: ", chr(self.pathList[dict_id[sol[x][y][z]]][Const.END_LOC])
+					print "\t\t\tStart time:", str(self.pathList[dict_id[sol[x][y][z]]][Const.START_HOUR])+":"+str(self.pathList[dict_id[sol[x][y][z]]][Const.START_MIN]),
+					print "End time: ", str(self.pathList[dict_id[sol[x][y][z]]][Const.END_HOUR])+":"+str(self.pathList[dict_id[sol[x][y][z]]][Const.END_MIN])
+					self.onNextPath(z, self.pathList[dict_id[sol[x][y][z]]][Const.START_LOC], self.pathList[dict_id[sol[x][y][z]]][Const.END_LOC],
+						self.pathList[dict_id[sol[x][y][z]]][Const.START_HOUR] * 60 + self.pathList[dict_id[sol[x][y][z]]][Const.START_MIN],
+						self.pathList[dict_id[sol[x][y][z]]][Const.END_HOUR] * 60 + self.pathList[dict_id[sol[x][y][z]]][Const.END_MIN],
 						True)
 				self.onEndDay(True)
 		print "cur_empl_days_len: ", self.cur_empl_days_len
@@ -86,7 +86,14 @@ class Eval:
 		print "PATH_INV=", self.PATH_INV
 		print "OVER_DAY_LEN=", self.OVER_DAY_LEN
 		print "OVER_WORK_LEN=", self.OVER_WORK_LEN
-		print "sol: ", sol
+		# print "sol: ", sol
+		
+		with open('out_JDD4.txt', 'w') as file:
+			for i in xrange(len(sol)):
+				for k in xrange(5):
+					day = str(i+1) + ' ' + str(k+1) + ' ' + ' '.join("{0}".format(n) for n in sol[i][k]) + '\n'
+					file.write(day)
+ 
 
 	def onNewEmployee(self, empl):
 		# compte un employe de plus
